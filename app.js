@@ -38,6 +38,7 @@ playground.addEventListener('touchstart', function (event) {
 })
 
 playground.addEventListener('touchmove', function (event) {
+  event.preventDefault()
   var distX = event.changedTouches[0].pageX - touchX
   var distY = event.changedTouches[0].pageY - touchY
   if (Math.abs(distX) > Math.abs(distY)) {
@@ -55,6 +56,7 @@ playground.addEventListener('touchmove', function (event) {
 })
 
 playground.addEventListener('touchend', function (event) {
+  event.preventDefault()
   var distX = event.changedTouches[0].pageX - touchX
   var distY = event.changedTouches[0].pageY - touchY
   if (Math.abs(distX) > Math.abs(distY)) {
