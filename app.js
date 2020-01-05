@@ -11,17 +11,53 @@ document.addEventListener('keydown', function (event) {
       drawPlayer()
     }
   }
+
   if (event.key === 'ArrowRight') {
     if (!checkCollisions(x = 1, y = 1)) {
       playerX++
       drawPlayer()
     }
   }
+
   if (event.key === 'ArrowDown') {
     advancePlayer()
   }
+
   if (event.key === 'ArrowUp') {
     rotatePlayer()
+  }
+})
+
+
+var touchX
+var touchY
+
+playground.addEventListener('touchstart', function (event) {
+  touchX = event.changedTouches[0].pageX
+  touchY = event.changedTouches[0].pageY
+})
+
+playground.addEventListener('touchend', function (event) {
+  var distX = event.changedTouches[0].pageX - touchX
+  var distY = event.changedTouches[0].pageY - touchY
+  if (Math.abs(distX) > Math.abs(distY)) {
+    if (distX > 0) {
+      if (!checkCollisions(x = 1, y = 1)) {
+        playerX++
+        drawPlayer()
+      }
+    } else {
+      if (!checkCollisions(x = -1, y = 1)) {
+        playerX--
+        drawPlayer()
+      }
+    }
+  } else {
+    if (distY > 0) {
+      advancePlayer()
+    } else {
+      rotatePlayer()
+    }
   }
 })
 
@@ -248,7 +284,7 @@ function draw(time) {
 
     // check for gameover
     if (grid[1].some(Boolean)) {
-      alert("GAME OVER")
+      // alert("GAME OVER")
       window.location.reload()
       return
     }
