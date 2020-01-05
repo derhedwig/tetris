@@ -37,21 +37,28 @@ playground.addEventListener('touchstart', function (event) {
   touchY = event.changedTouches[0].pageY
 })
 
+playground.addEventListener('touchmove', function (event) {
+  var distX = event.changedTouches[0].pageX - touchX
+  var distY = event.changedTouches[0].pageY - touchY
+  if (Math.abs(distX) > Math.abs(distY)) {
+    var clientRect = playground.getBoundingClientRect()
+    var x = (event.changedTouches[0].pageX - clientRect.left) / clientRect.width * 10
+    x = Math.floor(x)
+    console.log(x)
+    var oldPlayerX = playerX
+    playerX = x
+    if (checkCollisions(x = 0, y = 0)) {
+      playerX = oldPlayerX
+    }
+    drawPlayer()
+  }
+})
+
 playground.addEventListener('touchend', function (event) {
   var distX = event.changedTouches[0].pageX - touchX
   var distY = event.changedTouches[0].pageY - touchY
   if (Math.abs(distX) > Math.abs(distY)) {
-    if (distX > 0) {
-      if (!checkCollisions(x = 1, y = 1)) {
-        playerX++
-        drawPlayer()
-      }
-    } else {
-      if (!checkCollisions(x = -1, y = 1)) {
-        playerX--
-        drawPlayer()
-      }
-    }
+    //
   } else {
     if (distY > 0) {
       advancePlayer()
