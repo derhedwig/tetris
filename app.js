@@ -28,54 +28,36 @@ document.addEventListener('keydown', function (event) {
   }
 })
 
+// Button Handlers for mobile
+buttonLeft.addEventListener('click', function () {
+  if (!checkCollisions(x = -1, y = 1)) {
+    playerX--
+    drawPlayer()
+  }
+})
+buttonRight.addEventListener('click', function () {
+  if (!checkCollisions(x = 1, y = 1)) {
+    playerX++
+    drawPlayer()
+  }
+})
+buttonDown.addEventListener('click', function () {
+  advancePlayer()
+})
+buttonUp.addEventListener('click', function () {
+  rotatePlayer()
+})
+
 
 var touchX
 var touchY
 
-playground.addEventListener('touchstart', function (event) {
-  touchX = event.changedTouches[0].pageX
-  touchY = event.changedTouches[0].pageY
-})
 
-playground.addEventListener('touchmove', function (event) {
-  event.preventDefault()
-  var distX = event.changedTouches[0].pageX - touchX
-  var distY = event.changedTouches[0].pageY - touchY
-  if (Math.abs(distX) > Math.abs(distY)) {
-    var clientRect = playground.getBoundingClientRect()
-    var x = (event.changedTouches[0].pageX - clientRect.left) / clientRect.width * 10
-    x = Math.floor(x)
-    console.log(x)
-    var oldPlayerX = playerX
-    playerX = x
-    if (checkCollisions(x = 0, y = 0)) {
-      playerX = oldPlayerX
-    }
-    drawPlayer()
-  }
-})
-
-playground.addEventListener('touchend', function (event) {
-  event.preventDefault()
-  var distX = event.changedTouches[0].pageX - touchX
-  var distY = event.changedTouches[0].pageY - touchY
-  if (Math.abs(distX) > Math.abs(distY)) {
-    //
-  } else {
-    if (distY > 0) {
-      advancePlayer()
-    } else {
-      rotatePlayer()
-    }
-  }
-})
-
-
-var I = [[1, 1, 1, 1]] // 1x4 -> 4x1 [[1], [1], [1], [1]]
+var I = [[1, 1, 1, 1]]
 var J = [
   [1, 0, 0],
   [1, 1, 1]
-] // 2x3 -> 3x2 [[1, 1], [0, 1], [0, 1]]
+]
 var L = [
   [0, 0, 1],
   [1, 1, 1]

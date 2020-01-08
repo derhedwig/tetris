@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="app.css">
   </head>
   <body>
-    <main>
+    <div class="container">
       <aside>
         <div>
           <h3>Rows:</h3>
@@ -20,8 +20,21 @@
         </div>
       </aside>
 
-      <svg id="playground" viewbox="0 0 10 16" xmlns="http://www.w3.org/2000/svg"></svg>
-    </main>
+      <main>
+        <svg id="playground" width="320" height="512" viewbox="0 0 10 16" xmlns="http://www.w3.org/2000/svg"></svg>
+        
+        <div class="buttons">
+          <div>
+            <button id="buttonUp"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M7 10v8h6v-8h5l-8-8-8 8h5z"/></svg></button>
+          </div>
+          <div>
+            <button id="buttonLeft"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 13h8V7h-8V2l-8 8 8 8v-5z"/></svg></button>
+            <button id="buttonDown"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M7 10V2h6v8h5l-8 8-8-8h5z"/></svg></button>
+            <button id="buttonRight"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 7H2v6h8v5l8-8-8-8v5z"/></svg></button>
+          </div>
+        </div>
+      </main>
+    </div>
     <script src="app.js"></script>
   </body>
 </html>
