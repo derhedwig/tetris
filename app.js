@@ -1,58 +1,52 @@
-var timer = 0
-var step = 500
 var svgns = "http://www.w3.org/2000/svg";
-var rows = 0
+
+function drawRect(x, y, color) {
+  var rect = document.createElementNS(svgns, 'rect')
+  rect.setAttribute("x", x)
+  rect.setAttribute("y", y)
+  rect.setAttribute("width", 1)
+  rect.setAttribute("height", 1)
+  rect.setAttribute("fill", color)
+  return rect
+}
 
 
+
+// Keyboard Handlers
 document.addEventListener('keydown', function (event) {
   if (event.key === 'ArrowLeft') {
-    if (!checkCollisions(x = -1, y = 1)) {
-      playerX--
-      drawPlayer()
-    }
+    player.moveLeft()
   }
-
   if (event.key === 'ArrowRight') {
-    if (!checkCollisions(x = 1, y = 1)) {
-      playerX++
-      drawPlayer()
-    }
+    player.moveRight()
   }
-
   if (event.key === 'ArrowDown') {
-    advancePlayer()
+    player.moveDown()
   }
-
   if (event.key === 'ArrowUp') {
-    rotatePlayer()
+    player.rotate()
+  }
+  if (event.key === 'p') {
+    pause = !pause
   }
 })
 
-// Button Handlers for mobile
+// Button Handlers
 buttonLeft.addEventListener('click', function () {
-  if (!checkCollisions(x = -1, y = 1)) {
-    playerX--
-    drawPlayer()
-  }
+  player.moveLeft()
 })
 buttonRight.addEventListener('click', function () {
-  if (!checkCollisions(x = 1, y = 1)) {
-    playerX++
-    drawPlayer()
-  }
+  player.moveRight()
 })
 buttonDown.addEventListener('click', function () {
-  advancePlayer()
+  player.moveDown()
 })
 buttonUp.addEventListener('click', function () {
-  rotatePlayer()
+  player.rotate()
 })
 
 
-var touchX
-var touchY
-
-
+// The Tetrominos
 var I = [[1, 1, 1, 1]]
 var J = [
   [1, 0, 0],
@@ -82,36 +76,165 @@ var tetronimos = [I, J, L, O, S, T, Z]
 var tetronimoColors = ['teal', 'blue', 'orange', 'yellow', 'green', 'purple', 'red']
 
 
-var grid = []
-function initGrid() {
-  for (var i = 0; i < 16; i++) {
-    grid[i] = []
-    for (var j = 0; j < 10; j++) {
-      grid[i][j] = 0
+class Grid {
+  constructor(rows = 16, cols = 10) {
+    this.rows = rows
+    this.cols = cols
+    this.grid = Array(rows).fill().map(() => Array(cols).fill(0));
+  }
+
+  undraw() {
+    document.querySelectorAll('rect.fallen').forEach(gridItem => playground.removeChild(gridItem))
+  }
+
+  getCell(x, y) {
+    if (y < this.rows && x < this.cols) {
+      return this.grid[y][x]
+    }
+  }
+
+  setCell(x, y, value) {
+    this.grid[y][x] = value
+  }
+
+  getRow(y) {
+    return this.grid[y]
+  }
+
+  checkFullRows() {
+    for (var i = 0; i < 16; i++) {
+      if (this.grid[i].every(Boolean)) {
+        scoreRows++
+        scoreRowsDiv.innerHTML = scoreRows
+        for (var k = i; k > 1; k--) {
+          this.grid[k] = this.grid[k - 1];
+        }
+      }
+    }
+  }
+
+  checkGameOver() {
+    if (this.getRow(0).some(Boolean)) {
+      alert("GAME OVER")
+      return true
+    }
+    return false
+  }
+
+  draw() {
+    this.undraw()
+    for (var i = 0; i < this.rows; i++) {
+      for (var j = 0; j < this.cols; j++) {
+        if (this.grid[i][j] !== 0) {
+          var color = tetronimoColors[this.grid[i][j] - 1]
+          var rect = drawRect(j, i, color)
+          rect.classList.add("fallen")
+          playground.appendChild(rect)
+        }
+      }
     }
   }
 }
-initGrid()
+
+var grid = new Grid()
 
 
-var playerX
-var playerY
-var player
-var playerMatrix
-var playerTetronimoIndex
-var nextPlayerTetronimoIndex = Math.floor(Math.random() * tetronimos.length)
-
-function initPlayer() {
-  playerTetronimoIndex = nextPlayerTetronimoIndex
-  nextPlayerTetronimoIndex = Math.floor(Math.random() * tetronimos.length)
-  drawNext()
-  playerMatrix = tetronimos[playerTetronimoIndex]
-  playerY = 0
-  playerX = Math.floor(Math.random() * tetronimos.length)
-  while (checkCollisions(x = 1, y = 0)) {
-    playerX = Math.floor(Math.random() * tetronimos.length)
+class Player {
+  constructor() {
+    this.y = 0
+    this.tetronimoIndex = Math.floor(Math.random() * tetronimos.length)
+    this.matrix = tetronimos[this.tetronimoIndex]
+    this.x = Math.floor(Math.random() * (grid.cols - this.matrix[0].length + 1))
+    this.draw()
   }
+
+  gridCollision(x, y) {
+    for (var i = 0; i < this.matrix.length; i++) {
+      for (var j = 0; j < this.matrix[i].length; j++) {
+        if (this.matrix[i][j] !== 0 && grid.getCell(j + this.x + x, i + this.y + y) !== 0) {
+          return true
+        }
+      }
+    }
+  }
+
+  moveLeft() {
+    if (pause) return
+    if (this.x > 0 && !this.gridCollision(-1, 0)) {
+      this.x--
+      this.draw()
+    }
+  }
+
+  moveRight() {
+    if (pause) return
+    if (this.x + this.matrix[0].length < grid.cols && !this.gridCollision(1, 0)) {
+      this.x++
+      this.draw()
+    }
+  }
+
+  moveDown() {
+    if (pause) return
+    if (this.y + this.matrix.length < grid.rows && !this.gridCollision(0, 1)) {
+      this.y++
+      this.draw()
+      return
+    }
+    // copy player to grid
+    for (var i = 0; i < this.matrix.length; i++) {
+      for (var j = 0; j < this.matrix[i].length; j++) {
+        if (this.matrix[i][j] !== 0) {
+          grid.setCell(j + this.x, i + this.y, this.tetronimoIndex + 1)
+        }
+      }
+    }
+    // check for full rows
+    grid.checkFullRows()
+    grid.draw()
+    player = new Player()
+  }
+
+  rotate() {
+    if (pause) return
+    var tmpMatrix = this.matrix[0].map((val, index) => this.matrix.map(row => row[index]).reverse())
+    for (var i = 0; i < tmpMatrix.length; i++) {
+      for (var j = 0; j < tmpMatrix[i].length; j++) {
+        if (tmpMatrix[i][j] !== 0 && grid.getCell(j + this.x, i + this.y) !== 0) {
+          return
+        }
+      }
+    }
+    this.matrix = tmpMatrix
+    this.draw()
+  }
+
+  undraw() {
+    var oldPlayer = document.querySelector("#domPlayer")
+    if (oldPlayer) {
+      playground.removeChild(oldPlayer)
+    }
+  }
+
+  draw() {
+    this.undraw()
+    var domPlayer = document.createElementNS(svgns, 'g')
+    domPlayer.id = "domPlayer"
+    playground.appendChild(domPlayer)
+    var playerColor = tetronimoColors[this.tetronimoIndex]
+    for (var i = 0; i < this.matrix.length; i++) {
+      for (var j = 0; j < this.matrix[i].length; j++) {
+        if (this.matrix[i][j] === 1) {
+          domPlayer.appendChild(drawRect(j + this.x, i + this.y, playerColor))
+        }
+      }
+    }
+  }
+
 }
+
+var player = new Player()
+
 
 function drawNext() {
   document.querySelectorAll("#next rect").forEach(function (rect) {
@@ -123,165 +246,29 @@ function drawNext() {
   for (var i = 0; i < nextPlayerMatrix.length; i++) {
     for (var j = 0; j < nextPlayerMatrix[i].length; j++) {
       if (nextPlayerMatrix[i][j] === 1) {
-        var rect = document.createElementNS(svgns, 'rect')
-        rect.setAttribute("x", j)
-        rect.setAttribute("y", i)
-        rect.setAttribute("width", 1)
-        rect.setAttribute("height", 1)
-        rect.setAttribute("fill", color)
-        next.appendChild(rect)
+        next.appendChild(drawRect(j, i, color))
       }
     }
   }
 }
 
-function rotatePlayer() {
-  // copy
-  var matrix = JSON.parse(JSON.stringify(playerMatrix))
-  // rotate
-  matrix = matrix[0].map((val, index) => matrix.map(row => row[index]).reverse())
-  // check for overlaps with grid
-  for (var i = 0; i < matrix.length; i++) {
-    for (var j = 0; j < matrix[i].length; j++) {
-      if (matrix[i][j] !== 0 && grid[i + playerY][j + playerX] !== 0) {
-        return
-      }
-    }
-  }
-  // assign and draw
-  playerMatrix = matrix
-  drawPlayer()
-}
 
-function drawPlayer() {
-  var oldPlayer = document.querySelector("#player")
-  if (oldPlayer) {
-    playground.removeChild(oldPlayer)
+var scoreRows = 0
+var pause = false
 
-  }
-  player = document.createElementNS(svgns, 'g')
-  player.id = "player"
-  playground.appendChild(player)
-  var playerColor = tetronimoColors[playerTetronimoIndex]
-
-  for (var i = 0; i < playerMatrix.length; i++) {
-    for (var j = 0; j < playerMatrix[i].length; j++) {
-      if (playerMatrix[i][j] === 1) {
-        var rect = document.createElementNS(svgns, 'rect')
-        rect.setAttribute("x", j + playerX)
-        rect.setAttribute("y", i + playerY)
-        rect.setAttribute("width", 1)
-        rect.setAttribute("height", 1)
-        rect.setAttribute("fill", playerColor)
-        player.appendChild(rect)
-      }
-    }
-  }
-}
-
-initPlayer()
-
-
-function drawGrid() {
-  document.querySelectorAll('.grid').forEach(function (gridItem) {
-    playground.removeChild(gridItem)
-  })
-  for (var i = 0; i < 16; i++) {
-    for (var j = 0; j < 10; j++) {
-      if (grid[i][j] !== 0) {
-        var color = tetronimoColors[grid[i][j] - 1]
-        var rect = document.createElementNS(svgns, 'rect');
-        rect.setAttribute("x", j)
-        rect.setAttribute("y", i)
-        rect.setAttribute("width", 1)
-        rect.setAttribute("height", 1)
-        rect.setAttribute("fill", color)
-        rect.classList.add("grid")
-        playground.appendChild(rect)
-      }
-    }
-  }
-}
-
-drawGrid()
-
-
-function checkCollisions(x = 0, y = 0) {
-  for (var i = 0; i < playerMatrix.length; i++) {
-    for (var j = 0; j < playerMatrix[i].length; j++) {
-      if (playerMatrix[i][j] !== 0) {
-        // with bottom
-        if (y > 0) {
-          if (playerY + i === 15) {
-            return true
-          }
-        }
-        // with right
-        if (x > 0) {
-          if (playerX + j === 9) {
-            return true
-          }
-        }
-        // with left
-        if (x < 0) {
-          if (playerX + j === 0) {
-            return true
-          }
-        }
-        // with grid
-        if (grid[i + playerY + y][j + playerX + x] !== 0) {
-          return true
-        }
-      }
-    }
-  }
-  return false
-}
-
-function advancePlayer() {
-  playerY++
-
-  if (checkCollisions(x = 0, y = 1)) {
-    // copy player to grid
-    for (var i = 0; i < playerMatrix.length; i++) {
-      for (var j = 0; j < playerMatrix[i].length; j++) {
-        if (playerMatrix[i][j] !== 0) {
-          grid[i + playerY][j + playerX] = playerTetronimoIndex + 1
-        }
-      }
-    }
-
-    // check for full rows
-    for (var i = 0; i < 16; i++) {
-      if (grid[i].every(Boolean)) {
-        rows++
-        rowsDiv.innerHTML = rows
-        for (var k = i; k > 1; k--) {
-          grid[k] = grid[k - 1];
-        }
-      }
-    }
-
-    drawGrid()
-    initPlayer()
-  }
-  drawPlayer()
-}
-
+// main loop
+var timer = 0
+var step = 500
 function draw(time) {
-  if (time - timer > step) {
+  if (!pause && time - timer > step) {
     timer = time
-    advancePlayer()
-
-    // check for gameover
-    if (grid[1].some(Boolean)) {
-      // alert("GAME OVER")
-      window.location.reload()
-      return
+    player.moveDown()
+    if (grid.checkGameOver()) {
+      pause = true
     }
-
-    drawGrid()
+    grid.draw()
   }
   requestAnimationFrame(draw)
 }
 requestAnimationFrame(draw)
+player.draw()
