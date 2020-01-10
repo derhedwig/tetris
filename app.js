@@ -12,40 +12,6 @@ function drawRect(x, y, color) {
 
 
 
-// Keyboard Handlers
-document.addEventListener('keydown', function (event) {
-  if (event.key === 'ArrowLeft') {
-    player.moveLeft()
-  }
-  if (event.key === 'ArrowRight') {
-    player.moveRight()
-  }
-  if (event.key === 'ArrowDown') {
-    player.moveDown()
-  }
-  if (event.key === 'ArrowUp') {
-    player.rotate()
-  }
-  if (event.key === 'p') {
-    pause = !pause
-  }
-})
-
-// Button Handlers
-buttonLeft.addEventListener('click', function () {
-  player.moveLeft()
-})
-buttonRight.addEventListener('click', function () {
-  player.moveRight()
-})
-buttonDown.addEventListener('click', function () {
-  player.moveDown()
-})
-buttonUp.addEventListener('click', function () {
-  player.rotate()
-})
-
-
 // The Tetrominos
 var I = [[1, 1, 1, 1]]
 var J = [
@@ -102,15 +68,16 @@ class Grid {
   }
 
   checkFullRows() {
+    var rows = 0
     for (var i = 0; i < 16; i++) {
       if (this.grid[i].every(Boolean)) {
-        scoreRows++
-        scoreRowsDiv.innerHTML = scoreRows
+        rows++
         for (var k = i; k > 1; k--) {
           this.grid[k] = this.grid[k - 1];
         }
       }
     }
+    return rows
   }
 
   checkGameOver() {
@@ -136,11 +103,10 @@ class Grid {
   }
 }
 
-var grid = new Grid()
-
 
 class Player {
-  constructor() {
+  constructor(grid) {
+    this.grid = grid
     this.y = 0
     this.tetronimoIndex = Math.floor(Math.random() * tetronimos.length)
     this.matrix = tetronimos[this.tetronimoIndex]
@@ -151,7 +117,7 @@ class Player {
   gridCollision(x, y) {
     for (var i = 0; i < this.matrix.length; i++) {
       for (var j = 0; j < this.matrix[i].length; j++) {
-        if (this.matrix[i][j] !== 0 && grid.getCell(j + this.x + x, i + this.y + y) !== 0) {
+        if (this.matrix[i][j] !== 0 && this.grid.getCell(j + this.x + x, i + this.y + y) !== 0) {
           return true
         }
       }
@@ -159,54 +125,44 @@ class Player {
   }
 
   moveLeft() {
-    if (pause) return
     if (this.x > 0 && !this.gridCollision(-1, 0)) {
       this.x--
       this.draw()
+      return true
     }
+    return false
   }
 
   moveRight() {
-    if (pause) return
-    if (this.x + this.matrix[0].length < grid.cols && !this.gridCollision(1, 0)) {
+    if (this.x + this.matrix[0].length < this.grid.cols && !this.gridCollision(1, 0)) {
       this.x++
       this.draw()
+      return true
     }
+    return false
   }
 
   moveDown() {
-    if (pause) return
-    if (this.y + this.matrix.length < grid.rows && !this.gridCollision(0, 1)) {
+    if (this.y + this.matrix.length < this.grid.rows && !this.gridCollision(0, 1)) {
       this.y++
       this.draw()
-      return
+      return true
     }
-    // copy player to grid
-    for (var i = 0; i < this.matrix.length; i++) {
-      for (var j = 0; j < this.matrix[i].length; j++) {
-        if (this.matrix[i][j] !== 0) {
-          grid.setCell(j + this.x, i + this.y, this.tetronimoIndex + 1)
-        }
-      }
-    }
-    // check for full rows
-    grid.checkFullRows()
-    grid.draw()
-    player = new Player()
+    return false
   }
 
   rotate() {
-    if (pause) return
     var tmpMatrix = this.matrix[0].map((val, index) => this.matrix.map(row => row[index]).reverse())
     for (var i = 0; i < tmpMatrix.length; i++) {
       for (var j = 0; j < tmpMatrix[i].length; j++) {
-        if (tmpMatrix[i][j] !== 0 && grid.getCell(j + this.x, i + this.y) !== 0) {
-          return
+        if (tmpMatrix[i][j] !== 0 && this.grid.getCell(j + this.x, i + this.y) !== 0) {
+          return false
         }
       }
     }
     this.matrix = tmpMatrix
     this.draw()
+    return true
   }
 
   undraw() {
@@ -233,8 +189,6 @@ class Player {
 
 }
 
-var player = new Player()
-
 
 function drawNext() {
   document.querySelectorAll("#next rect").forEach(function (rect) {
@@ -253,22 +207,94 @@ function drawNext() {
 }
 
 
-var scoreRows = 0
-var pause = false
-
-// main loop
-var timer = 0
-var step = 500
-function draw(time) {
-  if (!pause && time - timer > step) {
-    timer = time
-    player.moveDown()
-    if (grid.checkGameOver()) {
-      pause = true
-    }
-    grid.draw()
+class Game {
+  constructor() {
+    this.paused = false
+    this.pace = 500
+    this.timer = 0
+    this.rows = 0
+    this.grid = new Grid()
+    this.player = new Player(this.grid)
+    this.registerHandlers()
   }
-  requestAnimationFrame(draw)
+
+  registerHandlers() {
+    var that = this
+    // Keyboard Handlers
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'p') {
+        that.pause = !that.pause
+      }
+
+      if (that.pause) return
+
+      if (event.key === 'ArrowLeft') {
+        that.player.moveLeft()
+      }
+      if (event.key === 'ArrowRight') {
+        that.player.moveRight()
+      }
+      if (event.key === 'ArrowDown') {
+        that.advancePlayer()
+      }
+      if (event.key === 'ArrowUp') {
+        that.player.rotate()
+      }
+    })
+
+    // Button Handlers
+    buttonLeft.addEventListener('click', function () {
+      that.player.moveLeft()
+    })
+    buttonRight.addEventListener('click', function () {
+      that.player.moveRight()
+    })
+    buttonDown.addEventListener('click', function () {
+      that.advancePlayer()
+    })
+    buttonUp.addEventListener('click', function () {
+      that.player.rotate()
+    })
+  }
+
+  start() {
+    requestAnimationFrame(() => this.loop())
+  }
+
+  increaseRows(amount) {
+    this.rows += amount
+    scoreRowsDiv.innerHTML = this.rows
+  }
+
+  advancePlayer() {
+    if (this.player.moveDown()) return
+
+    // copy player to grid
+    for (var i = 0; i < this.player.matrix.length; i++) {
+      for (var j = 0; j < this.player.matrix[i].length; j++) {
+        if (this.player.matrix[i][j] !== 0) {
+          this.grid.setCell(j + this.player.x, i + this.player.y, this.player.tetronimoIndex + 1)
+        }
+      }
+    }
+    // check for full rows
+    this.increaseRows(this.grid.checkFullRows())
+    this.grid.draw()
+    this.player = new Player(this.grid)
+  }
+
+  loop(time) {
+    if (!this.pause && time - this.timer > this.pace) {
+      this.timer = time
+      this.advancePlayer()
+      if (this.grid.checkGameOver()) {
+        pause = true
+      }
+      this.grid.draw()
+    }
+    requestAnimationFrame(time => this.loop(time))
+  }
 }
-requestAnimationFrame(draw)
-player.draw()
+
+var game = new Game()
+game.start()
